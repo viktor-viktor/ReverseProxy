@@ -36,6 +36,8 @@ func (auth *Authentication) Validate() error {
 	}
 	if auth.Auth_type == "" {
 		rv += "auth_type, "
+	} else if auth.Auth_type != "epp" {
+		return errors.New("Supported auth type is only 'epp'")
 	}
 	if auth.Url_path == "" {
 		rv += "url_path, "
@@ -55,7 +57,6 @@ func ReadAuthFromFile(auth interface{}) ([]Authentication, error) {
 
 	auth2, ok := auth.([]interface{})
 	if ok == false {
-		fmt.Print("Can't cast Authentication interface{} to map[string]interface{}")
 		return nil, errors.New("Can't cast Authentication interface{} to map[string]interface{}")
 	}
 	for _,v := range auth2 {

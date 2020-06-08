@@ -71,6 +71,29 @@ func ReadAuthFromFile(auth interface{}) ([]Authentication, error) {
 	return rv, nil
 }
 
+func RegisterAuth(cl *gin.Engine, file map[string]interface{}) error {
+
+	auths, err := ReadAuthFromFile(file["Auth"])
+	if err != nil {
+		fmt.Println(err.Error())
+		return err
+	}
+
+	for _,a := range auths {
+		middle, err := RegisterMiddleware(a)
+		if err != nil {
+			fmt.Println(err.Error())
+			return err
+		}
+
+		tmp := cl.Group("/")
+		tmp.Use(middle)
+		AuthMiddlewares[a.Name] = tmp
+	}
+
+	return nil
+}
+
 func DefaultAuthMiddleware(auth Authentication) gin.HandlerFunc {
 
 	return func(c *gin.Context) {
@@ -80,7 +103,7 @@ func DefaultAuthMiddleware(auth Authentication) gin.HandlerFunc {
 		req, err := http.NewRequest("GET", auth.Auth_scheme + "://" + auth.Auth_addr + auth.Url_path, nil)
 		if err != nil {
 			fmt.Println(err.Error())
-			c.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
@@ -90,7 +113,7 @@ func DefaultAuthMiddleware(auth Authentication) gin.HandlerFunc {
 				req.Header.Add(h, v)
 			} else {
 				fmt.Println("Missing required header: ", h)
-				c.AbortWithStatusJSON(400, gin.H{"message": "Missing required header: " + h})
+				c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Missing required header: " + h})
 				return
 			}
 		}
@@ -103,7 +126,7 @@ func DefaultAuthMiddleware(auth Authentication) gin.HandlerFunc {
 			if resp != nil { code = resp.StatusCode }
 			c.AbortWithStatusJSON(code, gin.H{"error": err.Error()})
 			return
-		} else if resp.StatusCode != 200 {
+		} else if resp.StatusCode != 200 { //need to check status not only for 200
 
 			fmt.Println("Unauthorized !")
 			// change to dynamically retrieve status code
@@ -121,5 +144,5 @@ func RegisterMiddleware(auth Authentication) (gin.HandlerFunc, error) {
 	if auth.Auth_type == "epp" {
 		return DefaultAuthMiddleware(auth), nil
 	}
-	return func(c *gin.Context) {}, errors.New("Unsupported auth_type is used")
+	return nil, errors.New("Unsupported auth_type is used")
 }

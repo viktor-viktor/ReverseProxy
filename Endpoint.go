@@ -10,22 +10,22 @@ import (
 
 //json description of the struct isn't obligatory
 type EndpointSettings struct {
-	Entry string
-	Redir string
-	Addr string
+	Entry_url string
+	Redir_url string
+	Redir_addr string
 	Use_auth bool
 	Auth_name string
 	Methods []string
 }
 
 func (endSet *EndpointSettings) Validate() error {
-	if endSet.Entry == "" || endSet.Redir == "" || endSet.Addr == "" {
+	if endSet.Entry_url == "" || endSet.Redir_addr == "" {
 		return errors.New("missing one of required fields: Entry, Redir, Addr")
 	}
 	//check if all methods are actual methods
 	for _, m := range  endSet.Methods {
 		if m != http.MethodGet && m != http.MethodPost && m != http.MethodPut && m != http.MethodDelete {
-			return errors.New("Unsupported methods: " + m + "  under entry: " + endSet.Entry)
+			return errors.New("Unsupported methods: " + m + "  under entry: " + endSet.Entry_url)
 		}
 	}
 
@@ -50,11 +50,11 @@ func RegisterEndpoint(engine *gin.Engine, settings *EndpointSettings) error {
 	redirectionMethod := func(c *gin.Context) {
 		// still unclear what is the difference between req.Url.Host and req.Host
 		director := func(req *http.Request) {
-			req.URL.Host = settings.Addr
-			req.URL.Path = settings.Redir
+			req.URL.Host = settings.Redir_addr
+			req.URL.Path = settings.Redir_url
 			req.URL.Scheme = "http"
 
-			req.Host = settings.Addr
+			req.Host = settings.Redir_addr
 		}
 
 		proxy := &httputil.ReverseProxy{Director: director}
@@ -64,10 +64,21 @@ func RegisterEndpoint(engine *gin.Engine, settings *EndpointSettings) error {
 	for _, method := range settings.Methods {
 
 		if groupRoute == nil {
-			engine.Handle(method, settings.Entry, redirectionMethod)
+			engine.Handle(method, settings.Entry_url, redirectionMethod)
 		} else {
-			groupRoute.Handle(method, settings.Entry, redirectionMethod)
+			groupRoute.Handle(method, settings.Entry_url, redirectionMethod)
 		}
+	}
+
+	return nil
+}
+
+func RegisterEndpoints(cl *gin.Engine, file map[string]interface{}) error {
+	if val, ok := file["endpoints"]; ok {
+		err := ReadEndpointsFromFile(cl, val)
+		if err != nil { return err }
+	} else {
+		return errors.New("There is no section 'endpoints' in settings.json file")
 	}
 
 	return nil

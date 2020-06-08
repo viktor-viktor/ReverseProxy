@@ -28,9 +28,9 @@
   ],
   "endpoints": [
     {
-      "entry": "test",
-      "redir": "",
-      "addr": "football.ua",
+      "entry_url": "test",
+      "redir_url": "",
+      "redir_addr": "football.ua",
       "use_auth": true,
       "auth_name": "public",
       "Methods": [

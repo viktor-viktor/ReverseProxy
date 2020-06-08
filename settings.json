@@ -1,0 +1,42 @@
+{
+  "ProxyAddr": "localhost:8080",
+  "Auth": [
+    {
+      "name": "public",
+      "auth_addr": "localhost:5000",
+      "auth_type": "epp",
+      "auth_scheme": "http",
+      "url_path": "/api/authorization/public",
+      "req_headers": [
+        "Authorization"
+      ]
+    },
+    {
+      "name": "dev",
+      "auth_addr": "localhost:9001",
+      "auth_type": "epp",
+      "auth_scheme": "http",
+      "url_path": "/dev"
+    },
+    {
+      "name": "admin",
+      "auth_addr": "localhost:9001",
+      "auth_type": "epp",
+      "auth_scheme": "http",
+      "url_path": "/admin"
+    }
+  ],
+  "endpoints": [
+    {
+      "entry": "test",
+      "redir": "",
+      "addr": "football.ua",
+      "use_auth": true,
+      "auth_name": "public",
+      "Methods": [
+        "PUT",
+        "GET"
+      ]
+    }
+  ]
+}

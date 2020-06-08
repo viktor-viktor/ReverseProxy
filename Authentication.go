@@ -1,6 +1,6 @@
 package main
 
-//better way for import
+//TODO: better way for import
 import (
 	"errors"
 
@@ -49,6 +49,7 @@ func (auth *Authentication) Validate() error {
 	return nil
 }
 
+//TODO: investigate method, it's comparably slow
 func ReadAuthFromFile(auth interface{}) ([]Authentication, error) {
 	var rv []Authentication
 
@@ -94,6 +95,7 @@ func RegisterAuth(cl *gin.Engine, file map[string]interface{}) error {
 	return nil
 }
 
+//TODO: change to return error
 func DefaultAuthMiddleware(auth Authentication) gin.HandlerFunc {
 
 	return func(c *gin.Context) {
@@ -129,7 +131,7 @@ func DefaultAuthMiddleware(auth Authentication) gin.HandlerFunc {
 		} else if resp.StatusCode != 200 { //need to check status not only for 200
 
 			fmt.Println("Unauthorized !")
-			// change to dynamically retrieve status code
+			// TODO: change to dynamically retrieve status code
 			c.AbortWithStatusJSON(resp.StatusCode, gin.H{"Status": resp.Status, "body": resp.Body})
 			return
 		}

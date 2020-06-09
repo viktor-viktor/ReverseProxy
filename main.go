@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"io/ioutil"
@@ -11,13 +12,20 @@ import (
 var Addr string
 
 func main () {
+
+	env := flag.String("env", "", "a string")
+	flag.Parse()
+	if *env != "" {
+		*env = "." + *env
+	}
+
 	
 	cl := gin.New()
 
 	// parsing file settings with native go
-	jsonFile, err := os.Open("settings.json")
+	jsonFile, err := os.Open("settings" + *env + ".json")
 	if err != nil {
-		fmt.Print("Unable to open settings.json")
+		fmt.Print("Unable to open settings" + *env + ".json")
 		return
 	}
 	defer jsonFile.Close()

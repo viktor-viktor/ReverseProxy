@@ -33,6 +33,10 @@ func (endSet *EndpointSettings) Validate() error {
 		endSet.Methods = []string {http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete}
 	}
 
+	if endSet.Use_auth && endSet.Auth_name == "" {
+		return errors.New("Auth name should be specified if 'use_auth' is true")
+	}
+
 	return nil
 }
 

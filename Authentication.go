@@ -129,10 +129,9 @@ func DefaultAuthMiddleware(auth Authentication) gin.HandlerFunc {
 			if resp != nil { code = resp.StatusCode }
 			c.AbortWithStatusJSON(code, gin.H{"error": err.Error()})
 			return
-		} else if resp.StatusCode != 200 { //need to check status not only for 200
+		} else if resp.StatusCode >= 300 { //need to check status not only for 200
 
 			fmt.Println("Unauthorized !")
-			// TODO: change to dynamically retrieve status code
 			c.AbortWithStatusJSON(resp.StatusCode, gin.H{"Status": resp.Status, "body": resp.Body})
 			return
 		}

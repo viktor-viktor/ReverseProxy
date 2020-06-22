@@ -3,6 +3,7 @@ package Logger
 import (
 	"errors"
 	elasticsearch7 "github.com/elastic/go-elasticsearch/v7"
+	"github.com/mitchellh/mapstructure"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/go-extras/elogrus.v7"
 	"os"
@@ -39,6 +40,13 @@ var elasticUrl string
 var defaultInit = false
 // levels of logging that are allowed
 var levels []logrus.Level
+
+type InitData struct {
+	Level string
+	UseStd bool
+	UseElastic string
+	UseFile string
+}
 
 type Logger struct {
 	log *logrus.Logger
@@ -147,6 +155,51 @@ func Init(level uint32, flags int, data map[string]string) error {
 
 	defaultInit = true
 	return nil
+}
+
+// Read data from parsed json file to InitData structure that can be used to init logger
+func ReadLoggerDataFromFile(d interface{}) (*InitData, error) {
+
+	var data InitData
+	err := mapstructure.Decode(d, data)
+	if err != nil {return nil, err}
+
+	return &data, nil
+}
+
+// Converts string logger level to logger level
+func StringLevelToLevel(l string) uint32 {
+	switch l {
+	case "Debug":
+		return uint32(LDebug)
+	case "Info":
+		return uint32(LInfo)
+	case "Warning":
+		return uint32(LWarning)
+	case "Error":
+		return uint32(LError)
+	default:
+		panic("Invalid string level is within config files !")
+	}
+}
+
+// converts InitData to falgs and data map[string]string
+func PrepareInitData(d *InitData) (int, map[string]string) {
+
+	f := 0
+	data := map[string]string{}
+
+	if d.UseStd == true { f = f | UseStdOut	}
+	if d.UseElastic != "" {
+		f = f | UseElastic
+		data[ElasticUrl] = d.UseElastic
+	}
+	if d.UseFile != "" {
+		f = f | UseFile
+		data[FilePath] = d.UseFile
+	}
+
+	return f, data
 }
 
 // Inits new logger and return pointer to it

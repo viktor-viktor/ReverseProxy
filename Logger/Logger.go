@@ -45,6 +45,15 @@ type Logger struct {
 	name string
 }
 
+func mapToFields(data map[string]string) map[string]interface{} {
+	out := map[string]interface{}{}
+	for k, v := range data {
+		out[k] = v
+	}
+
+	return out
+}
+
 func getLevelGroupFromLevel(level uint32) ([]logrus.Level,error) {
 
 	levels := []logrus.Level{LDebug, LInfo, LWarning, LError}
@@ -88,7 +97,7 @@ func configureElasticOutput(l *logrus.Logger, url string) error {
 	hook, err := elogrus.NewAsyncElasticHook(client, "localhost", logrus.Level(levels[0]), "mylog")
 	if err != nil {return nil}
 
-	logrus.AddHook(hook)
+	l.AddHook(hook)
 
 	return nil
 }
@@ -152,8 +161,9 @@ func New(name string, flags int, data map[string]string) (*Logger, error) {
 	
 	if flags == 0 {
 		if defaultInit == false {return nil, errors.New("can't create logger while default settings aren't init")}
-		// use default settings
-		return nil, errors.New("can't create logger without output specified")
+		if useStdOut {configureStdOutput(l.log)}
+		if fileOutPath != "" {configureFileOutput(l.log, fileOutPath)}
+		if elasticUrl != "" {configureElasticOutput(l.log, elasticUrl)}
 	}
 
 	if flags&UseFile != 0 {
@@ -181,24 +191,24 @@ func New(name string, flags int, data map[string]string) (*Logger, error) {
 	return &l, nil
 }
 
-func (l *Logger) Debug(data map[string]string) {
+func (l *Logger) Debug(data map[string]string, message string) {
 	data["logger"] = l.name
-	l.log.Debug(data)
+	l.log.WithFields(mapToFields(data)).Debug(message)
 }
 
-func (l *Logger) Info(data map[string]string) {
+func (l *Logger) Info(data map[string]string, message string) {
 	data["logger"] = l.name
-	l.log.Info(data)
+	l.log.WithFields(mapToFields(data)).Info(message)
 }
 
-func (l *Logger) Warning(data map[string]string) {
+func (l *Logger) Warning(data map[string]string, message string) {
 	data["logger"] = l.name
-	l.log.Warning(data)
+	l.log.WithFields(mapToFields(data)).Warning(message)
 }
 
-func (l *Logger) Error(data map[string]string) {
+func (l *Logger) Error(data map[string]string, message string) {
 	data["logger"] = l.name
-	l.log.Error(data)
+	l.log.WithFields(mapToFields(data)).Error(message)
 }
 
 func handleInvalidName(name string) error {
@@ -206,33 +216,33 @@ func handleInvalidName(name string) error {
 	return errors.New("logger with name: " + name + " doesn't exist")
 }
 
-func Debug(name string, data map[string]string) error {
+func Debug(name string, data map[string]string, message string) error {
 	if v, exist := loggers[name]; exist {
-		v.Debug(data)
+		v.Debug(data, message)
 		return nil
 	}
 	return handleInvalidName(name)
 }
 
-func Info(name string, data map[string]string) error {
+func Info(name string, data map[string]string, message string) error {
 	if v, exist := loggers[name]; exist {
-		v.Info(data)
+		v.Info(data, message)
 		return nil
 	}
 	return handleInvalidName(name)
 }
 
-func Warning(name string, data map[string]string) error {
+func Warning(name string, data map[string]string, message string) error {
 	if v, exist := loggers[name]; exist {
-		v.Warning(data)
+		v.Warning(data, message)
 		return nil
 	}
 	return handleInvalidName(name)
 }
 
-func Error(name string, data map[string]string) error {
+func Error(name string, data map[string]string, message string) error {
 	if v, exist := loggers[name]; exist {
-		v.Error(data)
+		v.Error(data, message)
 		return nil
 	}
 	return handleInvalidName(name)

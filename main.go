@@ -51,6 +51,10 @@ func main () {
 		if err != nil {panic(err.Error())}
 	}
 
+	//l, err := log.New("main", 0, nil)
+
+
+
 	// Reading addr of the server
 	if v,ok := parsedFile["ProxyAddr"]; ok {
 		Addr = v.(string)

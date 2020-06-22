@@ -27,8 +27,6 @@ const (
 
 )
 
-// map of all loggers
-var loggers map[string]Logger = map[string]Logger{}
 // default settings //
 // specify if std output should be used
 var useStdOut = false
@@ -239,8 +237,6 @@ func New(name string, flags int, data map[string]string) (*Logger, error) {
 		} else {return nil, errors.New("can't create logger with elastic output as neither data or default data specified")}
 	}
 
-	loggers[name] = l
-
 	return &l, nil
 }
 
@@ -264,39 +260,23 @@ func (l *Logger) Error(data map[string]string, message string) {
 	l.log.WithFields(mapToFields(data)).Error(message)
 }
 
-func handleInvalidName(name string) error {
-	logrus.WithFields(logrus.Fields{"Message": "can't find logger with nane: " + name}).Warning()
-	return errors.New("logger with name: " + name + " doesn't exist")
+func Debug(name string, data map[string]string, message string) {
+	data["logger"] = "default"
+	logrus.StandardLogger().WithFields(mapToFields(data)).Debug(message)
 }
 
-func Debug(name string, data map[string]string, message string) error {
-	if v, exist := loggers[name]; exist {
-		v.Debug(data, message)
-		return nil
-	}
-	return handleInvalidName(name)
+func Info(name string, data map[string]string, message string) {
+	data["logger"] = "default"
+	logrus.StandardLogger().WithFields(mapToFields(data)).Info(message)
 }
 
-func Info(name string, data map[string]string, message string) error {
-	if v, exist := loggers[name]; exist {
-		v.Info(data, message)
-		return nil
-	}
-	return handleInvalidName(name)
+func Warning(data map[string]string, message string) {
+	data["logger"] = "default"
+	logrus.StandardLogger().WithFields(mapToFields(data)).Warning(message)
 }
 
-func Warning(name string, data map[string]string, message string) error {
-	if v, exist := loggers[name]; exist {
-		v.Warning(data, message)
-		return nil
-	}
-	return handleInvalidName(name)
+func Error(data map[string]string, message string) {
+	data["logger"] = "default"
+	logrus.StandardLogger().WithFields(mapToFields(data)).Error(message)
 }
 
-func Error(name string, data map[string]string, message string) error {
-	if v, exist := loggers[name]; exist {
-		v.Error(data, message)
-		return nil
-	}
-	return handleInvalidName(name)
-}

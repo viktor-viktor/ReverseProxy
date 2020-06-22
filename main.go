@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"io/ioutil"
 	"os"
@@ -11,6 +10,10 @@ import (
 )
 
 var Addr string
+
+func init() {
+
+}
 
 func main () {
 
@@ -51,8 +54,7 @@ func main () {
 		if err != nil {panic(err.Error())}
 	}
 
-	//l, err := log.New("main", 0, nil)
-
+	l := log.New("main", 0, nil)
 
 
 	// Reading addr of the server
@@ -60,19 +62,19 @@ func main () {
 		Addr = v.(string)
 	} else {
 		//logs
-		fmt.Println("ProxyAddr is required at settings")
+		l.Error(map[string]string{},"ProxyAddr is required at settings")
 		return
 	}
 
 	err = RegisterAuth(cl, parsedFile)
 	if err != nil {
-		fmt.Println(err.Error())
+		l.Error(map[string]string{}, err.Error())
 		return
 	}
 
 	err = RegisterEndpoints(cl, parsedFile)
 	if err != nil {
-		fmt.Println(err.Error())
+		l.Error(map[string]string{}, err.Error())
 		return
 	}
 	

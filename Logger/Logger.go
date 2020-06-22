@@ -36,6 +36,8 @@ var fileOutPath string
 var elasticUrl string
 // shows if default settings have been init
 var defaultInit = false
+// default logger
+var defaultLogger Logger
 // levels of logging that are allowed
 var levels []logrus.Level
 
@@ -151,6 +153,7 @@ func Init(level uint32, flags int, data map[string]string) error {
 		if err != nil {return err}
 	}
 
+	defaultLogger = Logger{log: logrus.StandardLogger(), name: "default"}
 	defaultInit = true
 	return nil
 }
@@ -204,14 +207,17 @@ func PrepareInitData(d *InitData) (int, map[string]string) {
 // flags - one of the { UseFile UseStdOut UseElastic }
 // data - for each of the keys data should specified (except of UseStdOut)
 // if no data for key specified, default value is used, if no default value exist - error is returned
-func New(name string, flags int, data map[string]string) (*Logger, error) {
+func New(name string, flags int, data map[string]string) *Logger {
 
 	l := Logger{}
 	l.log = logrus.New()
 	l.name = name
 	
 	if flags == 0 {
-		if defaultInit == false {return nil, errors.New("can't create logger while default settings aren't init")}
+		if defaultInit == false {
+			Error(map[string]string{}, "can't create logger while default settings aren't init")
+			return &defaultLogger
+		}
 		if useStdOut {configureStdOutput(l.log)}
 		if fileOutPath != "" {configureFileOutput(l.log, fileOutPath)}
 		if elasticUrl != "" {configureElasticOutput(l.log, elasticUrl)}
@@ -222,7 +228,10 @@ func New(name string, flags int, data map[string]string) (*Logger, error) {
 			configureFileOutput(l.log, v)
 		} else if fileOutPath != "" {
 			configureFileOutput(l.log, fileOutPath)
-		} else {return nil, errors.New("can't create logger with file output as neither data or default data specified")}
+		} else {
+			Error(map[string]string{}, "can't create logger with file output as neither data or default data specified")
+			return &defaultLogger
+		}
 	}
 
 	if useStdOut == true || flags&UseStdOut != 0 {
@@ -234,10 +243,13 @@ func New(name string, flags int, data map[string]string) (*Logger, error) {
 			configureElasticOutput(l.log, v)
 		} else if elasticUrl != "" {
 			configureElasticOutput(l.log, elasticUrl)
-		} else {return nil, errors.New("can't create logger with elastic output as neither data or default data specified")}
+		} else {
+			Error(map[string]string{}, "can't create logger with elastic output as neither data or default data specified")
+			return &defaultLogger
+		}
 	}
 
-	return &l, nil
+	return &l
 }
 
 func (l *Logger) Debug(data map[string]string, message string) {

@@ -6,7 +6,14 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"net/http"
 	"net/http/httputil"
+	"proxy/Logger"
 )
+
+var l *Logger.Logger
+
+func init() {
+	l = Logger.New("Endpoint", 0, nil)
+}
 
 //json description of the struct isn't obligatory
 type EndpointSettings struct {
@@ -52,6 +59,8 @@ func RegisterEndpoint(engine *gin.Engine, settings *EndpointSettings) error {
 	}
 
 	redirectionMethod := func(c *gin.Context) {
+		l.Info(map[string]string{}, "Request made for Url: " + settings.Entry_url)
+
 		// still unclear what is the difference between req.Url.Host and req.Host
 		director := func(req *http.Request) {
 			req.URL.Host = settings.Redir_addr

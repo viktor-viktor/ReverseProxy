@@ -17,15 +17,12 @@ func init() {
 
 func main () {
 
-	err := log.Init(uint32(log.LInfo), log.UseElastic | log.UseStdOut, map[string]string{log.ElasticUrl: "http://192.168.0.101:9200/"})
-	if err != nil {panic(err.Error())}
-
 	env := flag.String("env", "", "a string")
 	flag.Parse()
 	if *env != "" {
 		*env = "." + *env
 	}
-	
+
 	cl := gin.New()
 
 	// parsing file settings with native go

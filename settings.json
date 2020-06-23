@@ -1,5 +1,11 @@
 {
   "ProxyAddr": "localhost:8080",
+  "Logging": {
+    "Level": "Error",
+    "UseStd": true,
+    "UseElastic": "http://localhost:9200",
+    "UseFile": ""
+  },
   "Auth": [
     {
       "name": "public",
@@ -31,7 +37,7 @@
       "entry_url": "test",
       "redir_url": "",
       "redir_addr": "football.ua",
-      "use_auth": true,
+      "use_auth": false,
       "auth_name": "public",
       "Methods": [
         "PUT",

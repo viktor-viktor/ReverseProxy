@@ -11,10 +11,6 @@ import (
 
 var l *Logger.Logger
 
-func init() {
-	l = Logger.New("Endpoint", 0, nil)
-}
-
 //json description of the struct isn't obligatory
 type EndpointSettings struct {
 	Entry_url string
@@ -87,6 +83,8 @@ func RegisterEndpoint(engine *gin.Engine, settings *EndpointSettings) error {
 }
 
 func RegisterEndpoints(cl *gin.Engine, file map[string]interface{}) error {
+	if l == nil { l = Logger.New("Endpoint", 0, nil) }
+
 	if val, ok := file["endpoints"]; ok {
 		err := ReadEndpointsFromFile(cl, val)
 		if err != nil { return err }

@@ -79,10 +79,9 @@ func getLevelGroupFromLevel(level uint32) ([]logrus.Level,error) {
 }
 
 // add std output as a hook for given logger
-func configureStdOutput(l *logrus.Logger) error {
+func configureStdOutput(l *logrus.Logger) {
 	h := WriteHook{writer: os.Stdout, levels: levels}
 	l.AddHook(&h)
-	return nil
 }
 
 // adds file output as hook for given logger
@@ -103,7 +102,7 @@ func configureElasticOutput(l *logrus.Logger, url string) error {
 	if err != nil { return err }
 
 	hook, err := elogrus.NewAsyncElasticHook(client, "localhost", logrus.Level(levels[0]), "mylog")
-	if err != nil {return nil}
+	if err != nil {return err}
 
 	l.AddHook(hook)
 
@@ -135,7 +134,7 @@ func Init(level uint32, flags int, data map[string]string) error {
 	if flags&UseElastic != 0 {
 		if v, exist := data[ElasticUrl]; exist {
 			elasticUrl = v
-		} else {errors.New("flag 'UseElastic' specified but not url path at data ! Logger.Init()")}
+		} else {return errors.New("flag 'UseElastic' specified but not url path at data ! Logger.Init()")}
 	}
 
 	logrus.SetFormatter(&logrus.JSONFormatter{})
@@ -162,7 +161,7 @@ func Init(level uint32, flags int, data map[string]string) error {
 func ReadLoggerDataFromFile(d interface{}) (*InitData, error) {
 
 	var data InitData
-	err := mapstructure.Decode(d, data)
+	err := mapstructure.Decode(d, &data)
 	if err != nil {return nil, err}
 
 	return &data, nil
@@ -221,6 +220,8 @@ func New(name string, flags int, data map[string]string) *Logger {
 		if useStdOut {configureStdOutput(l.log)}
 		if fileOutPath != "" {configureFileOutput(l.log, fileOutPath)}
 		if elasticUrl != "" {configureElasticOutput(l.log, elasticUrl)}
+
+		return &l
 	}
 
 	if flags&UseFile != 0 {

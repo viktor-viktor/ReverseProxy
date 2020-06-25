@@ -3,6 +3,9 @@ package main
 //TODO: better way for import
 import (
 	"errors"
+	"io/ioutil"
+	"proxy/Logger"
+	"strings"
 
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -19,6 +22,7 @@ type Authentication struct {
 	Req_headers []string
 }
 
+var lauth *Logger.Logger
 var AuthMiddlewares = map[string]*gin.RouterGroup{}
 
 func (auth *Authentication) Validate() error {
@@ -53,6 +57,8 @@ func (auth *Authentication) Validate() error {
 
 //TODO: investigate method, it's comparably slow
 func ReadAuthFromFile(auth interface{}) ([]Authentication, error) {
+	lauth = Logger.New("Authentication", 0, nil)
+
 	var rv []Authentication
 
 	auth2, ok := auth.([]interface{})
@@ -105,7 +111,7 @@ func DefaultAuthMiddleware(auth Authentication) gin.HandlerFunc {
 		cl := http.Client{}
 		req, err := http.NewRequest("GET", auth.Auth_scheme + "://" + auth.Auth_addr + auth.Url_path, nil)
 		if err != nil {
-			fmt.Println(err.Error())
+			lauth.Error(map[string]string{"Error": err.Error()}, "Error while creating new 'Request'")
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
@@ -115,7 +121,9 @@ func DefaultAuthMiddleware(auth Authentication) gin.HandlerFunc {
 			if v := c.Request.Header.Get(h); len(v) != 0 {
 				req.Header.Add(h, v)
 			} else {
-				fmt.Println("Missing required header: ", h)
+				lauth.Error(
+					map[string]string{"Missing header": h, "Required headers": strings.Join(auth.Req_headers[:], ",")},
+				"Missing required header")
 				c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Missing required header: " + h})
 				return
 			}
@@ -124,14 +132,16 @@ func DefaultAuthMiddleware(auth Authentication) gin.HandlerFunc {
 		// send request to auth server
 		resp, err := cl.Do(req)
 		if err != nil {
-			fmt.Println(err.Error())
+			lauth.Error(map[string]string{"Error": err.Error()}, "Error when trying to send auth request")
 			code := http.StatusInternalServerError
 			if resp != nil { code = resp.StatusCode }
 			c.AbortWithStatusJSON(code, gin.H{"error": err.Error()})
 			return
 		} else if resp.StatusCode >= 300 { //need to check status not only for 200
 
-			fmt.Println("Unauthorized !")
+			bodyB, _ := ioutil.ReadAll(resp.Body)
+			lauth.Error(map[string]string{"Status": resp.Status, "Response": string(bodyB)},
+			"Unsuccessful code return form auth service")
 			c.AbortWithStatusJSON(resp.StatusCode, gin.H{"Status": resp.Status, "body": resp.Body})
 			return
 		}

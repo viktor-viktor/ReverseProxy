@@ -8,6 +8,7 @@ import (
 	"net/http/httputil"
 	auth "proxy/Authentication"
 	"proxy/Logger"
+	"proxy/Protocol"
 )
 
 var l *Logger.Logger
@@ -19,6 +20,7 @@ type EndpointSettings struct {
 	Redir_addr string
 	Use_auth bool
 	Auth_name string
+	Protocol string
 	Methods []string
 }
 
@@ -35,6 +37,20 @@ func (endSet *EndpointSettings) Validate() error {
 
 	if len(endSet.Methods) == 0 {
 		endSet.Methods = []string {http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete}
+	}
+
+	if endSet.Protocol == "" {
+		endSet.Protocol = Protocol.Protocols[0].Type
+	} else {
+		found := false
+		for _,v := range Protocol.Protocols {
+			if v.Type == endSet.Protocol {
+				found = true
+				break
+			}
+		}
+
+		if found == false {panic("Endpoint " + endSet.Entry_url + "  use invalid protocol: " + endSet.Protocol)}
 	}
 
 	if endSet.Use_auth && endSet.Auth_name == "" {
@@ -62,7 +78,7 @@ func registerEndpoint(engine *gin.Engine, settings *EndpointSettings) {
 		director := func(req *http.Request) {
 			req.URL.Host = settings.Redir_addr
 			req.URL.Path = settings.Redir_url
-			req.URL.Scheme = "http"
+			req.URL.Scheme = settings.Protocol
 
 			req.Host = settings.Redir_addr
 		}

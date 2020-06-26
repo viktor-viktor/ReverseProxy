@@ -1,4 +1,17 @@
 {
+  "Addr": "192.168.0.101",
+  "Protocols": [
+    {
+      "type": "http",
+      "port": 8080
+    },
+    {
+      "type": "https",
+      "port": 8081,
+      "certPath": "test",
+      "keyPath": "test"
+    }
+  ],
   "ProxyAddr": "localhost:8080",
   "Logging": {
     "Level": "Error",

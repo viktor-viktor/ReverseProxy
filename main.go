@@ -9,6 +9,9 @@ import (
 	"proxy/Authentication"
 	"proxy/Endpoint"
 	log "proxy/Logger"
+	"proxy/Protocol"
+	"strconv"
+	"sync"
 )
 
 var settingsFile map[string]interface{}
@@ -118,5 +121,38 @@ func main () {
 	initAuth(cl)
 	initEndpoint(cl)
 	
-	cl.Run(Addr)
+//	cl.Run(Addr)
+
+	Protocol.InitProtocols(settingsFile)
+
+	if v, exist := settingsFile["Addr"]; exist {
+		v2, ok := v.(string)
+		if ok == false {panic("Can't cast 'Addr' field to string")}
+		Addr = v2
+	}
+
+	wg := sync.WaitGroup{}
+	wg.Add(len(Protocol.Protocols))
+
+	for _, v := range Protocol.Protocols {
+		if v.Type == "https" {
+			go func(p Protocol.Protocol) {
+				// init cl.RunTLs
+				addr := Addr + ":" + strconv.Itoa(p.Port)
+				err := cl.RunTLS(addr, "TLS/cert.pem", "TLS/key.pem")
+				panic("Unable to run TLS server. Error: " + err.Error())
+				wg.Done()
+			}(v)
+			continue
+		}
+
+		go func(p Protocol.Protocol) {
+			// Create address from ip, protocol and port. above the sames
+			addr := Addr + ":" + strconv.Itoa(p.Port)
+			cl.Run(addr)
+			wg.Done()
+		}(v)
+	}
+
+	wg.Wait()
 }

@@ -192,10 +192,10 @@ func PrepareInitData(d *InitData) (int, map[string]string) {
 	return flags, data
 }
 
-// Inits new logger and return pointer to it
+// Inits new logger and return pointer to it.
+// if no data for key specified, default value is used or default logger is used
 // flags - one of the { UseFile UseStdOut UseElastic }
 // data - for each of the keys data should specified (except of UseStdOut)
-// if no data for key specified, default value is used, if no default value exist - error is returned
 func New(name string, flags int, data map[string]string) *Logger {
 
 	l := Logger{}

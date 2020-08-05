@@ -13,7 +13,11 @@ import (
 
 var settingsFile map[string]interface{}
 
-var Addr string
+var (
+	 Addr string
+	 l *log.Logger
+)
+
 
 func readSettingFile() {
 	env := flag.String("env", "", "a string")
@@ -50,21 +54,33 @@ func readProxyAddr() {
 	if v,ok := settingsFile["ProxyAddr"]; ok {
 		Addr = v.(string)
 	} else {
-		//logs
-//		Endpoint.l.Error(map[string]string{},"ProxyAddr is required at settings")
+		l.Error(map[string]string{},"ProxyAddr is required at settings")
 		panic("ProxyAddr is required at settings")
 	}
 }
 
 func initAuth(cl *gin.Engine) {
-	err := Authentication.RegisterAuth(cl, settingsFile) //TODO: call panic inside
-	if err != nil {
-//		Endpoint.l.Error(map[string]string{}, err.Error())
-		panic(err.Error())
-	}
+	defer func() {
+		if r:=recover(); r != nil {
+			if message, ok := r.(string); ok {
+				l.Error(map[string]string{}, message,)
+			}
+			panic(r)
+		}
+	}()
+	Authentication.RegisterAuth(cl, settingsFile)
 }
 
 func initEndpoint(cl *gin.Engine) {
+	defer func() {
+		if r:=recover(); r != nil {
+			if message, ok := r.(string); ok {
+				l.Error(map[string]string{}, message,)
+			}
+			panic(r)
+		}
+	}()
+
 	Endpoint.RegisterEndpoints(cl, settingsFile)
 }
 
@@ -72,6 +88,8 @@ func main () {
 
 	readSettingFile()
 	initLogging()
+	l = log.New("main", 0, map[string]string{})
+
 	readProxyAddr()
 
 	cl := gin.New()

@@ -7,7 +7,6 @@ import (
 	"proxy/Logger"
 	"strings"
 
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/mitchellh/mapstructure"
 	"net/http"
@@ -56,53 +55,41 @@ func (auth *Authentication) Validate() error {
 }
 
 //TODO: investigate method, it's comparably slow
-func ReadAuthFromFile(auth interface{}) ([]Authentication, error) {
+func ReadAuthFromFile(auth interface{}) []Authentication {
 	lauth = Logger.New("Authentication", 0, nil)
 
 	var rv []Authentication
 
 	auth2, ok := auth.([]interface{})
 	if ok == false {
-		return nil, errors.New("Can't cast Authentication interface{} to map[string]interface{}")
+		panic("Can't cast Authentication interface{} to map[string]interface{}")
 	}
 	for _,v := range auth2 {
 		var tmp Authentication
 		err := mapstructure.Decode(v, &tmp)
 		if err != nil {
-			return nil, err
+			panic("Can't decode one of authentication from json to structure. Error: " + err.Error())
 		}
-		err = tmp.Validate()
-		if err != nil {return nil, err}
+		if err := tmp.Validate(); err != nil {panic(err.Error())}
 		rv = append(rv, tmp)
 	}
 
-	return rv, nil
+	return rv
 }
 
-func RegisterAuth(cl *gin.Engine, file map[string]interface{}) error {
+func RegisterAuth(cl *gin.Engine, file map[string]interface{}) {
 
-	auths, err := ReadAuthFromFile(file["Auth"])
-	if err != nil {
-		fmt.Println(err.Error())
-		return err
-	}
+	auths := ReadAuthFromFile(file["Auth"])
 
 	for _,a := range auths {
-		middle, err := RegisterMiddleware(a)
-		if err != nil {
-			fmt.Println(err.Error())
-			return err
-		}
+		middle := RegisterMiddleware(a)
 
 		tmp := cl.Group("/")
 		tmp.Use(middle)
 		AuthMiddlewares[a.Name] = tmp
 	}
-
-	return nil
 }
 
-//TODO: change to return error
 func DefaultAuthMiddleware(auth Authentication) gin.HandlerFunc {
 
 	return func(c *gin.Context) {
@@ -151,10 +138,10 @@ func DefaultAuthMiddleware(auth Authentication) gin.HandlerFunc {
 	}
 }
 
-func RegisterMiddleware(auth Authentication) (gin.HandlerFunc, error) {
+func RegisterMiddleware(auth Authentication) gin.HandlerFunc {
 	// currently supported only type 'endpoint per permission
 	if auth.Auth_type == "epp" {
-		return DefaultAuthMiddleware(auth), nil
+		return DefaultAuthMiddleware(auth)
 	}
-	return nil, errors.New("Unsupported auth_type is used")
+	panic("Unsupported auth_type is used: " + auth.Auth_type )
 }

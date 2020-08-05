@@ -1,7 +1,6 @@
 package Logger
 
 import (
-	"errors"
 	elasticsearch7 "github.com/elastic/go-elasticsearch/v7"
 	"github.com/mitchellh/mapstructure"
 	"github.com/sirupsen/logrus"
@@ -10,7 +9,7 @@ import (
 )
 
 const (
-	// flags that init where logs should go
+	// flagslags that init where logs should go
 	UseFile 	= 1
 	UseStdOut  	= 2
 	UseElastic  = 4
@@ -62,7 +61,7 @@ func mapToFields(data map[string]string) map[string]interface{} {
 	return out
 }
 
-func getLevelGroupFromLevel(level uint32) ([]logrus.Level,error) {
+func getLevelGroupFromLevel(level uint32) []logrus.Level {
 
 	levels := []logrus.Level{LDebug, LInfo, LWarning, LError}
 	index := -1
@@ -73,9 +72,8 @@ func getLevelGroupFromLevel(level uint32) ([]logrus.Level,error) {
 		}
 	}
 
-	if index == -1 {return nil, errors.New("given invalid log level type. Type should be one of: {LDebug, LInfo, LWarning, LError}")}
-	logrus.Info()
-	return levels[index:], nil
+	if index == -1 {panic("given invalid log level type. Type should be one of: {LDebug, LInfo, LWarning, LError}")}
+	return levels[index:]
 }
 
 // add std output as a hook for given logger
@@ -85,28 +83,25 @@ func configureStdOutput(l *logrus.Logger) {
 }
 
 // adds file output as hook for given logger
-func configureFileOutput(l *logrus.Logger, path string) error {
+func configureFileOutput(l *logrus.Logger, path string) {
 	file, err := os.OpenFile(path, os.O_CREATE | os.O_APPEND , 0666)
-	if err != nil {return err}
+	if err != nil {panic("Failed to open file while 'configureFileOutput'. Error: " + err.Error())}
 	h := WriteHook{writer: file, levels:levels }
 	l.AddHook(&h)
-	return nil
 }
 
 // adds elastic search output as hook for given logger
-func configureElasticOutput(l *logrus.Logger, url string) error {
+func configureElasticOutput(l *logrus.Logger, url string) {
 
 	client, err := elasticsearch7.NewClient(elasticsearch7.Config{
 		Addresses: []string{url},
 	})
-	if err != nil { return err }
+	if err != nil { panic("Failed to create ElasticSearch client. Errpr: " + err.Error()) }
 
 	hook, err := elogrus.NewAsyncElasticHook(client, "localhost", logrus.Level(levels[0]), "mylog")
-	if err != nil {return err}
+	if err != nil { panic("Failed to create ElasticSearch hook client. Errpr: " + err.Error()) }
 
 	l.AddHook(hook)
-
-	return nil
 }
 
 // Init default settings of logger. Possible settings:
@@ -114,17 +109,15 @@ func configureElasticOutput(l *logrus.Logger, url string) error {
 // fileOutPath - string
 // elasticUrl - string
 // level - on of {LDebug, LInfo, LWarning, LError}
-func Init(level uint32, flags int, data map[string]string) error {
-	if flags == 0 { return errors.New("Logger.Init(); At least one flags for output should be specified")}
-	var err error
+func Init(level uint32, flags int, data map[string]string) {
+	if flags == 0 { panic("Logger.Init(); At least one flags for output should be specified")}
 	
-	levels, err = getLevelGroupFromLevel(level)
-	if err != nil {return err}
+	levels = getLevelGroupFromLevel(level)
 
 	if flags&UseFile != 0 {
 		if v, exist := data[FilePath]; exist {
 			fileOutPath = v
-		} else {return errors.New("flag 'UseFile' specified but not file path at data ! Logger.Init()")}
+		} else {panic("flag 'UseFile' specified but not file path at data ! Logger.Init()")}
 	}
 
 	if flags&UseStdOut != 0 {
@@ -134,7 +127,7 @@ func Init(level uint32, flags int, data map[string]string) error {
 	if flags&UseElastic != 0 {
 		if v, exist := data[ElasticUrl]; exist {
 			elasticUrl = v
-		} else {return errors.New("flag 'UseElastic' specified but not url path at data ! Logger.Init()")}
+		} else {panic("flag 'UseElastic' specified but not url path at data ! Logger.Init()")}
 	}
 
 	logrus.SetFormatter(&logrus.JSONFormatter{})
@@ -143,28 +136,25 @@ func Init(level uint32, flags int, data map[string]string) error {
 	}
 
 	if fileOutPath != "" {
-		err := configureFileOutput(logrus.StandardLogger(), fileOutPath)
-		if err != nil {return err}
+		configureFileOutput(logrus.StandardLogger(), fileOutPath)
 	}
 
 	if elasticUrl != "" {
-		err := configureElasticOutput(logrus.StandardLogger(), elasticUrl)
-		if err != nil {return err}
+		configureElasticOutput(logrus.StandardLogger(), elasticUrl)
 	}
 
 	defaultLogger = Logger{log: logrus.StandardLogger(), name: "default"}
 	defaultInit = true
-	return nil
 }
 
 // Read data from parsed json file to InitData structure that can be used to init logger
-func ReadLoggerDataFromFile(d interface{}) (*InitData, error) {
+func ReadLoggerDataFromFile(d interface{}) *InitData {
 
 	var data InitData
 	err := mapstructure.Decode(d, &data)
-	if err != nil {return nil, err}
+	if err != nil {panic("Can't decode logger data from json to struct. Error: " + err.Error())}
 
-	return &data, nil
+	return &data
 }
 
 // Converts string logger level to logger level
@@ -186,20 +176,20 @@ func StringLevelToLevel(l string) uint32 {
 // converts InitData to falgs and data map[string]string
 func PrepareInitData(d *InitData) (int, map[string]string) {
 
-	f := 0
+	flags := 0
 	data := map[string]string{}
 
-	if d.UseStd == true { f = f | UseStdOut	}
+	if d.UseStd == true { flags = flags | UseStdOut	}
 	if d.UseElastic != "" {
-		f = f | UseElastic
+		flags = flags | UseElastic
 		data[ElasticUrl] = d.UseElastic
 	}
 	if d.UseFile != "" {
-		f = f | UseFile
+		flags = flags | UseFile
 		data[FilePath] = d.UseFile
 	}
 
-	return f, data
+	return flags, data
 }
 
 // Inits new logger and return pointer to it

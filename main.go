@@ -35,22 +35,15 @@ func readSettingFile() {
 }
 
 func initLogging() {
-	var err error
-
 	if v, exist := settingsFile["Logging"]; exist {
 
-		logData, err := log.ReadLoggerDataFromFile(v)
-		if err != nil {	panic(err.Error()) } //TODO: panic can be inside (minus line of code)
-
-		f, d := log.PrepareInitData(logData)
-		err = log.Init(log.StringLevelToLevel(logData.Level), f, d)
-		if err != nil {panic(err.Error())} //TODO: panic can be inside (minus line of code)
+		logData := log.ReadLoggerDataFromFile(v)
+		flags, data := log.PrepareInitData(logData)
+		log.Init(log.StringLevelToLevel(logData.Level), flags, data)
 	} else {
 
-		err = log.Init(uint32(log.LInfo), log.UseStdOut, nil)
-		if err != nil {panic(err.Error())} //TODO: panic can be inside (minus line of code)
+		log.Init(uint32(log.LInfo), log.UseStdOut, nil)
 	}
-
 }
 
 func readProxyAddr() {

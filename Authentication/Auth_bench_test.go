@@ -1,4 +1,4 @@
-package main
+package Authentication
 
 import (
 	"encoding/json"

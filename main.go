@@ -6,6 +6,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"io/ioutil"
 	"os"
+	"proxy/Authentication"
+	"proxy/Endpoint"
 	log "proxy/Logger"
 )
 
@@ -56,21 +58,21 @@ func readProxyAddr() {
 		Addr = v.(string)
 	} else {
 		//logs
-		l.Error(map[string]string{},"ProxyAddr is required at settings")
+//		Endpoint.l.Error(map[string]string{},"ProxyAddr is required at settings")
 		panic("ProxyAddr is required at settings")
 	}
 }
 
 func initAuth(cl *gin.Engine) {
-	err := RegisterAuth(cl, settingsFile) //TODO: call panic inside
+	err := Authentication.RegisterAuth(cl, settingsFile) //TODO: call panic inside
 	if err != nil {
-		l.Error(map[string]string{}, err.Error())
+//		Endpoint.l.Error(map[string]string{}, err.Error())
 		panic(err.Error())
 	}
 }
 
 func initEndpoint(cl *gin.Engine) {
-	RegisterEndpoints(cl, settingsFile)
+	Endpoint.RegisterEndpoints(cl, settingsFile)
 }
 
 func main () {

@@ -1,4 +1,4 @@
-package main
+package Endpoint
 
 import (
 	"errors"
@@ -6,6 +6,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"net/http"
 	"net/http/httputil"
+	auth "proxy/Authentication"
 	"proxy/Logger"
 )
 
@@ -47,7 +48,7 @@ func registerEndpoint(engine *gin.Engine, settings *EndpointSettings) {
 
 	var groupRoute *gin.RouterGroup = nil
 	if settings.Use_auth {
-		if v, ok := AuthMiddlewares[settings.Auth_name]; ok {
+		if v, ok := auth.AuthMiddlewares[settings.Auth_name]; ok {
 			groupRoute = v
 		} else {
 			panic("Trying to register endpoint with unexisted auth name: " + settings.Auth_name)

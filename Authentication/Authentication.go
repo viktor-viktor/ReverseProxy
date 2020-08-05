@@ -1,4 +1,4 @@
-package main
+package Authentication
 
 //TODO: better way for import
 import (

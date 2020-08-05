@@ -9,21 +9,16 @@ import (
 	log "proxy/Logger"
 )
 
+var settingsFile map[string]interface{}
+
 var Addr string
 
-func init() {
-
-}
-
-func main () {
-
+func readSettingFile() {
 	env := flag.String("env", "", "a string")
 	flag.Parse()
 	if *env != "" {
 		*env = "." + *env
 	}
-
-	cl := gin.New()
 
 	// parsing file settings with native go
 	jsonFile, err := os.Open("settings" + *env + ".json")
@@ -31,49 +26,66 @@ func main () {
 		panic("Unable to open settings" + *env + ".json")
 	}
 	defer jsonFile.Close()
-	var parsedFile map[string]interface{}
 
 	byteVal, _ := ioutil.ReadAll(jsonFile)
-	err = json.Unmarshal(byteVal, &parsedFile)
+	err = json.Unmarshal(byteVal, &settingsFile)
 	if err != nil {panic(err.Error())}
+}
 
-	if v, exist := parsedFile["Logging"]; exist {
+func initLogging() {
+	var err error
+
+	if v, exist := settingsFile["Logging"]; exist {
 
 		logData, err := log.ReadLoggerDataFromFile(v)
-		if err != nil {	panic(err.Error()) }
+		if err != nil {	panic(err.Error()) } //TODO: panic can be inside (minus line of code)
 
 		f, d := log.PrepareInitData(logData)
 		err = log.Init(log.StringLevelToLevel(logData.Level), f, d)
-		if err != nil {panic(err.Error())}
+		if err != nil {panic(err.Error())} //TODO: panic can be inside (minus line of code)
 	} else {
 
 		err = log.Init(uint32(log.LInfo), log.UseStdOut, nil)
-		if err != nil {panic(err.Error())}
+		if err != nil {panic(err.Error())} //TODO: panic can be inside (minus line of code)
 	}
 
-	l := log.New("main", 0, nil)
+}
 
-
-	// Reading addr of the server
-	if v,ok := parsedFile["ProxyAddr"]; ok {
+func readProxyAddr() {
+	if v,ok := settingsFile["ProxyAddr"]; ok {
 		Addr = v.(string)
 	} else {
 		//logs
 		l.Error(map[string]string{},"ProxyAddr is required at settings")
-		return
+		panic("ProxyAddr is required at settings")
 	}
+}
 
-	err = RegisterAuth(cl, parsedFile)
+func initAuth(cl *gin.Engine) {
+	err := RegisterAuth(cl, settingsFile) //TODO: call panic inside
 	if err != nil {
 		l.Error(map[string]string{}, err.Error())
-		return
+		panic(err.Error())
 	}
+}
 
-	err = RegisterEndpoints(cl, parsedFile)
+func initEndpoint(cl *gin.Engine) {
+	err := RegisterEndpoints(cl, settingsFile)
 	if err != nil {
 		l.Error(map[string]string{}, err.Error())
-		return
+		panic(err.Error())
 	}
+}
+
+func main () {
+
+	readSettingFile()
+	initLogging()
+	readProxyAddr()
+
+	cl := gin.New()
+	initAuth(cl)
+	initEndpoint(cl)
 	
 	cl.Run(Addr)
 }

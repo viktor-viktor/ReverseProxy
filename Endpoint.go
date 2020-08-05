@@ -43,14 +43,14 @@ func (endSet *EndpointSettings) Validate() error {
 	return nil
 }
 
-func RegisterEndpoint(engine *gin.Engine, settings *EndpointSettings) error {
+func registerEndpoint(engine *gin.Engine, settings *EndpointSettings) {
 
 	var groupRoute *gin.RouterGroup = nil
 	if settings.Use_auth {
 		if v, ok := AuthMiddlewares[settings.Auth_name]; ok {
 			groupRoute = v
 		} else {
-			return errors.New("Trying to register endpoint with unexisted auth name")
+			panic("Trying to register endpoint with unexisted auth name: " + settings.Auth_name)
 		}
 	}
 
@@ -78,27 +78,22 @@ func RegisterEndpoint(engine *gin.Engine, settings *EndpointSettings) error {
 			groupRoute.Handle(method, settings.Entry_url, redirectionMethod)
 		}
 	}
-
-	return nil
 }
 
-func RegisterEndpoints(cl *gin.Engine, file map[string]interface{}) error {
+func RegisterEndpoints(cl *gin.Engine, file map[string]interface{}) {
 	if l == nil { l = Logger.New("Endpoint", 0, nil) }
 
 	if val, ok := file["endpoints"]; ok {
-		err := ReadEndpointsFromFile(cl, val)
-		if err != nil { return err }
+		readEndpointsFromFile(cl, val)
 	} else {
-		return errors.New("There is no section 'endpoints' in settings.json file")
+		panic("There is no section 'endpoints' in settings.json file")
 	}
-
-	return nil
 }
 
-func ReadEndpointsFromFile(cl *gin.Engine, file interface{}) error {
-	val2,ok := file.([]interface{})
+func readEndpointsFromFile(cl *gin.Engine, file interface{}) {
+	val2, ok := file.([]interface{})
 	if ok == false {
-		return errors.New("Can't cast interface{} to []interface{}")
+		panic("Can't cast interface{} to []interface{} when parsing 'endpoints' json value")
 	}
 
 	var endpoints []EndpointSettings
@@ -111,10 +106,8 @@ func ReadEndpointsFromFile(cl *gin.Engine, file interface{}) error {
 	for _, endp := range endpoints {
 		err := endp.Validate()
 		if err != nil {
-			return err
+			panic(err.Error())
 		}
-		RegisterEndpoint(cl, &endp)
+		registerEndpoint(cl, &endp)
 	}
-
-	return nil
 }

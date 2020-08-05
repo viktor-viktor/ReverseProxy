@@ -70,11 +70,7 @@ func initAuth(cl *gin.Engine) {
 }
 
 func initEndpoint(cl *gin.Engine) {
-	err := RegisterEndpoints(cl, settingsFile)
-	if err != nil {
-		l.Error(map[string]string{}, err.Error())
-		panic(err.Error())
-	}
+	RegisterEndpoints(cl, settingsFile)
 }
 
 func main () {

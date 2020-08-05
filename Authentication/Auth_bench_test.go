@@ -24,11 +24,7 @@ func BenchmarkReadAuthFromFile(b *testing.B) {
 
 	b.ResetTimer()
 	for i:=0; i<b.N; i++ {
-		_, err := ReadAuthFromFile(mock["Auth"])
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
+		ReadAuthFromFile(mock["Auth"])
 	}
 }
 
@@ -81,11 +77,7 @@ func BenchmarkRegisterMiddleware(b *testing.B) {
 
 	b.ResetTimer()
 	for i:=0; i<b.N; i++ {
-		_, err := RegisterMiddleware(auth)
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
+		RegisterMiddleware(auth)
 	}
 }
 

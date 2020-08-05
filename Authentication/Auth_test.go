@@ -6,6 +6,28 @@ import (
 	"testing"
 )
 
+func handleInitializationPanicExpected(t *testing.T, message string) {
+	if r:=recover(); r == nil {
+		if _, ok := r.(string); ok {
+			t.Error(message)
+		} else {
+			t.Error("Unexpected panic occured. recovery: {r}", r)
+		}
+
+	}
+}
+
+func handleInitializationPanicUnexpected(t *testing.T, message string) {
+	if r:=recover(); r != nil {
+		if _, ok := r.(string); ok {
+			t.Error(message)
+		} else {
+			t.Error("Unexpected panic occured. recovery: {r}", r)
+		}
+
+	}
+}
+
 func TestAuthentication_Validate(t *testing.T) {
 	var auth Authentication = Authentication{Name: "test", Auth_scheme: "http", Auth_type: "epp",
 		Auth_addr: "adas", Url_path: "ADdas", Req_headers: []string {"Adsa", "sad"}}
@@ -71,20 +93,20 @@ func TestAuthentication_Validate(t *testing.T) {
 
 func TestRegisterMiddleware(t *testing.T) {
 	var auth Authentication = Authentication{Auth_type: "epp"}
-	_,err := RegisterMiddleware(auth)
-	if err != nil {
-		t.Error(err)
-	}
+	func() {
+		defer handleInitializationPanicUnexpected(t, "Register middleware should succeed ")
+		RegisterMiddleware(auth)
+	}()
 
 	auth.Auth_type = "asd"
-	_,err = RegisterMiddleware(auth)
-	if err == nil {
-		t.Error("Must not be able to register middleware with auth type other then 'epp'")
-	}
+	func() {
+		defer handleInitializationPanicExpected(t,
+			"Must not be able to register middleware with auth type other then 'epp' ")
+		RegisterMiddleware(auth)
+	}()
 }
 
 func TestReadAuthFromFile(t *testing.T) {
-
 	// valid data
 	byt := []byte(`{"Auth": [{
 		"name": "public",
@@ -100,10 +122,10 @@ func TestReadAuthFromFile(t *testing.T) {
 	var mock map[string]interface{}
 	json.Unmarshal(byt, &mock)
 
-	_, err := ReadAuthFromFile(mock["Auth"])
-	if err != nil {
-		t.Error(err)
-	}
+	func() {
+		defer handleInitializationPanicUnexpected(t, "ReadAuthFromFile should succeed")
+		ReadAuthFromFile(mock["Auth"])
+	}()
 
 	//invalid data
 	byt = []byte(`{"Auth": {
@@ -117,10 +139,9 @@ func TestReadAuthFromFile(t *testing.T) {
 	]
 	}}`)
 	json.Unmarshal(byt, &mock)
-	_, err = ReadAuthFromFile(mock["auth"])
-	if err == nil {
-		t.Error("Shouldn't be able to cast array to ")
-	}
 
-
+	func() {
+		defer handleInitializationPanicExpected(t, "Shouldn't be able to cast object to array")
+		ReadAuthFromFile(mock["Auth"])
+	}()
 }

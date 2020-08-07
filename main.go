@@ -26,16 +26,38 @@ func readSettingFile() {
 		*env = "." + *env
 	}
 
-	// parsing file settings with native go
-	jsonFile, err := os.Open("settings" + *env + ".json")
-	if err != nil {
-		panic("Unable to open settings" + *env + ".json")
-	}
-	defer jsonFile.Close()
+	defaultFileName, envFileName := "settings.json", "settings" + *env + ".json"
 
-	byteVal, _ := ioutil.ReadAll(jsonFile)
-	err = json.Unmarshal(byteVal, &settingsFile)
-	if err != nil {panic(err.Error())}
+	defFile, err1 := os.Open(defaultFileName)
+	defer func() { if err1 == nil { defFile.Close()}}()
+	envFile, err2 := os.Open(envFileName)
+	defer func() { if err2 == nil { envFile.Close()}}()
+
+	if err1 != nil && err2 != nil {
+		panic("not settings file found under the following environment: " + *env)
+	}
+
+	defSettings := map[string]interface{}{}
+	if err1 == nil {
+		defByteVal, _ := ioutil.ReadAll(defFile)
+		if err1 = json.Unmarshal(defByteVal, &defSettings); err1 != nil {
+			panic("Can't unmarshal default settings.json file. Error: " + err1.Error())
+		}
+	}
+
+	envSettings := map[string]interface{}{}
+	if err2 == nil {
+		envByteVal, _ := ioutil.ReadAll(envFile)
+		if err2 = json.Unmarshal(envByteVal, &envSettings); err2 != nil {
+			panic("Can't unmarshal environment settings file under env: " + *env + " . Error: " + err2.Error())
+		}
+	}
+
+	for key, val := range envSettings {
+		defSettings[key] = val
+	}
+
+	settingsFile = defSettings
 }
 
 func initLogging() {

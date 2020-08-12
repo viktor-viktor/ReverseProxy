@@ -32,7 +32,7 @@ func ReadProtocolFormFile(prot interface{}) []Protocol {
 			"'Protocols' category")
 	}
 
-	for _, v := range(prot2) {
+	for _, v := range prot2 {
 		var tmp Protocol
 		err := mapstructure.Decode(v, &tmp)
 		if err != nil {panic("Can't decide protocol settings object. " + err.Error())}

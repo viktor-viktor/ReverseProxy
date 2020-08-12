@@ -75,15 +75,6 @@ func initLogging() {
 	}
 }
 
-func readProxyAddr() {
-	if v,ok := settingsFile["ProxyAddr"]; ok {
-		Addr = v.(string)
-	} else {
-		l.Error(map[string]string{},"ProxyAddr is required at settings")
-		panic("ProxyAddr is required at settings")
-	}
-}
-
 func initAuth(cl *gin.Engine) {
 	defer func() {
 		if r:=recover(); r != nil {
@@ -115,15 +106,11 @@ func main () {
 	initLogging()
 	l = log.New("main", 0, map[string]string{})
 
-	readProxyAddr()
+	Protocol.InitProtocols(settingsFile)
 
 	cl := gin.New()
 	initAuth(cl)
 	initEndpoint(cl)
-	
-//	cl.Run(Addr)
-
-	Protocol.InitProtocols(settingsFile)
 
 	if v, exist := settingsFile["Addr"]; exist {
 		v2, ok := v.(string)
@@ -137,20 +124,19 @@ func main () {
 	for _, v := range Protocol.Protocols {
 		if v.Type == "https" {
 			go func(p Protocol.Protocol) {
-				// init cl.RunTLs
+				defer wg.Done()
 				addr := Addr + ":" + strconv.Itoa(p.Port)
 				err := cl.RunTLS(addr, "TLS/cert.pem", "TLS/key.pem")
 				panic("Unable to run TLS server. Error: " + err.Error())
-				wg.Done()
 			}(v)
 			continue
 		}
 
 		go func(p Protocol.Protocol) {
+			defer wg.Done()
 			// Create address from ip, protocol and port. above the sames
 			addr := Addr + ":" + strconv.Itoa(p.Port)
 			cl.Run(addr)
-			wg.Done()
 		}(v)
 	}
 

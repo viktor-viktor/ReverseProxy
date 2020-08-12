@@ -16,7 +16,7 @@
   "Logging": {
     "Level": "Error",
     "UseStd": true,
-    "UseElastic": "http://localhost:9200",
+    "UseElastic": "",
     "UseFile": ""
   },
   "Auth": [
